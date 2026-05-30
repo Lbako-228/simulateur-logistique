@@ -3,161 +3,535 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulateur Logistique PRO - Visuel Avancé</title>
+    <title>Optimisation de Localisation - Méthode de Newton</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
 
     <style>
         :root {
-            --primary-blue: #0A2558;
-            --accent-blue: #2962FF;
-            --light-bg: #F4F7FE;
+            --primary-blue: #0D3B66;
+            --accent-blue: #3D92C9;
+            --dark-gray: #4A4A4A;
+            --light-bg: #F4F6F9;
+            --white: #FFFFFF;
+            --success: #00C853;
+            --warning: #FF9100;
+            --purple: #9C27B0;
         }
-        body {
-            background-color: var(--light-bg);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .navbar-custom {
-            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        }
-        .card-header-custom {
-            background-color: transparent;
-            border-bottom: 2px solid var(--light-bg);
-            font-weight: bold;
-            color: var(--primary-blue);
-        }
-        .btn-custom {
-            background-color: var(--accent-blue);
-            color: white;
-            border-radius: 8px;
-            font-weight: bold;
-            padding: 12px;
-            box-shadow: 0 4px 10px rgba(41, 98, 255, 0.3);
-        }
-        .btn-custom:hover {
-            background-color: var(--primary-blue);
-            color: white;
-        }
-        .metric-box {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            border-left: 4px solid var(--accent-blue);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-            height: 100%;
-        }
-        .metric-title { font-size: 0.9rem; color: #6c757d; font-weight: 600; text-transform: uppercase;}
-        .metric-value { font-size: 1.5rem; font-weight: bold; color: var(--primary-blue); margin-top: 5px;}
 
-        /* Style spécial pour encadrer le graphique comme une carte */
-        #plot {
-            height: 550px;
-            width: 100%;
-            border: 2px solid #b0d4e3;
-            border-radius: 8px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8edf5 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Barre de navigation */
+        .navbar-custom {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #1a4d7e 100%);
+            color: white;
+            padding: 18px 0;
+            box-shadow: 0 4px 20px rgba(13, 59, 102, 0.3);
+            position: relative;
             overflow: hidden;
         }
 
+        .navbar-custom::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 50%;
+        }
+
+        .navbar-custom::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: 5%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 50%;
+        }
+
+        .navbar-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .navbar-subtitle {
+            font-size: 0.8rem;
+            opacity: 0.85;
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Cartes */
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: var(--white);
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header-custom {
+            background: transparent;
+            border-bottom: 2px solid #eef2f7;
+            font-weight: 700;
+            color: var(--primary-blue);
+            padding: 15px 20px;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .card-header-custom i {
+            color: var(--accent-blue);
+            margin-right: 8px;
+        }
+
+        /* Bouton principal */
+        .btn-custom {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, #2980b9 100%);
+            color: white;
+            border-radius: 12px;
+            font-weight: 700;
+            padding: 12px 24px;
+            border: none;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(61, 146, 201, 0.3);
+        }
+
+        .btn-custom:hover {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #1a4d7e 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(13, 59, 102, 0.4);
+        }
+
+        .btn-custom:active {
+            transform: translateY(0);
+        }
+
+        /* Boîtes de métriques */
+        .metric-box {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 18px 15px;
+            text-align: center;
+            border-left: 5px solid var(--accent-blue);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .metric-box:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            color: #6c757d;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .metric-title i {
+            font-size: 0.9rem;
+        }
+
+        .metric-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-top: 5px;
+            line-height: 1.3;
+        }
+
+        .metric-value.large {
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        /* Badge de distance */
         .distance-badge {
             display: inline-block;
             padding: 5px 10px;
             border-radius: 20px;
-            background-color: #e3f2fd;
-            color: #0d47a1;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            color: #0D3B66;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin: 3px 2px;
+            letter-spacing: 0.3px;
+        }
+
+        /* Conteneur du graphique avec position relative */
+        .plot-container {
+            position: relative;
+        }
+
+        /* Zone de graphique */
+        #plot {
+            height: 520px;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fafbfc;
+        }
+
+        /* Boutons de zoom personnalisés */
+        .zoom-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 1000;
+        }
+
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-blue);
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--primary-blue);
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 8px rgba(13, 59, 102, 0.15);
+            backdrop-filter: blur(5px);
+            line-height: 1;
+            user-select: none;
+        }
+
+        .zoom-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 15px rgba(61, 146, 201, 0.4);
+            transform: scale(1.05);
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+
+        .zoom-btn.reset-btn {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        /* Paramètres avancés */
+        .advanced-settings {
+            background: linear-gradient(135deg, #fffdf5 0%, #fff9e6 100%);
+            border-radius: 12px;
+            padding: 15px;
+            border: 2px solid #ffe082;
             font-size: 0.85rem;
-            font-weight: bold;
-            margin-bottom: 5px;
+        }
+
+        /* Inputs */
+        .form-control-sm {
+            border-radius: 8px;
+            border: 2px solid #e0e6ed;
+            padding: 6px 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        .form-control-sm:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(61, 146, 201, 0.15);
+            outline: none;
+        }
+
+        .bg-light-input {
+            background-color: #f8f9fb;
+        }
+
+        /* Alerte */
+        .alert-custom {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #856404;
+        }
+
+        /* Légende des zones */
+        .zone-legend {
+            font-weight: 700;
+            color: var(--primary-blue);
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .metric-value {
+                font-size: 1.1rem;
+            }
+            #plot {
+                height: 400px;
+            }
+            .zoom-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="navbar-custom text-center mb-4">
-        <h2 class="fw-bold"><i class="fa-solid fa-map-location-dot me-2"></i> Optimisation des Transports</h2>
-        <p class="mb-0 text-light opacity-75">Visualisation Architecturale du Problème de Weber</p>
+    <!-- Barre de navigation -->
+    <div class="navbar-custom">
+        <div class="container">
+            <div class="text-center">
+                <div class="navbar-title">
+                    <i class="fa-solid fa-location-dot me-2"></i>
+                    Optimisation de Localisation d'un Entrepôt
+                </div>
+                <div class="navbar-subtitle mt-1">
+                    <i class="fa-solid fa-microchip me-1"></i> 
+                    Algorithme de Newton-Raphson — Problème de Weber
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="container-fluid px-4 mb-5">
-        <div class="row">
+    <!-- Contenu principal -->
+    <div class="container-fluid px-4 py-4">
+        <div class="row g-4">
+            
+            <!-- Panneau de contrôle -->
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body p-3">
+                        
+                        <!-- Section Réseau Logistique -->
+                        <div class="card-header-custom mb-2">
+                            <i class="fa-solid fa-industry"></i> Réseau Logistique
+                        </div>
 
-            <!-- CONTRÔLES -->
-            <div class="col-lg-4 mb-4">
-                <div class="card p-3 h-100">
-                    <div class="card-header-custom pb-2 mb-3">
-                        <i class="fa-solid fa-industry me-2"></i> Paramètres du Réseau
+                        <!-- En-tête des colonnes -->
+                        <div class="row g-1 mb-2 px-2">
+                            <div class="col-3"></div>
+                            <div class="col-3 text-center"><small class="text-muted fw-bold">X</small></div>
+                            <div class="col-3 text-center"><small class="text-muted fw-bold">Y</small></div>
+                            <div class="col-3 text-center"><small class="text-muted fw-bold">Tonnage</small></div>
+                        </div>
+
+                        <!-- Zone 1 -->
+                        <div class="row g-1 mb-2 align-items-center bg-light rounded-3 py-1 px-1">
+                            <div class="col-3"><span class="zone-legend">🏭 Z1</span></div>
+                            <div class="col-3"><input type="number" id="x1" class="form-control form-control-sm" value="0" step="any"></div>
+                            <div class="col-3"><input type="number" id="y1" class="form-control form-control-sm" value="0" step="any"></div>
+                            <div class="col-3"><input type="number" id="w1" class="form-control form-control-sm bg-light-input fw-bold" value="100" step="any"></div>
+                        </div>
+
+                        <!-- Zone 2 -->
+                        <div class="row g-1 mb-2 align-items-center bg-light rounded-3 py-1 px-1">
+                            <div class="col-3"><span class="zone-legend">🏭 Z2</span></div>
+                            <div class="col-3"><input type="number" id="x2" class="form-control form-control-sm" value="10" step="any"></div>
+                            <div class="col-3"><input type="number" id="y2" class="form-control form-control-sm" value="0" step="any"></div>
+                            <div class="col-3"><input type="number" id="w2" class="form-control form-control-sm bg-light-input fw-bold" value="100" step="any"></div>
+                        </div>
+
+                        <!-- Zone 3 -->
+                        <div class="row g-1 mb-3 align-items-center bg-light rounded-3 py-1 px-1">
+                            <div class="col-3"><span class="zone-legend">🏭 Z3</span></div>
+                            <div class="col-3"><input type="number" id="x3" class="form-control form-control-sm" value="5" step="any"></div>
+                            <div class="col-3"><input type="number" id="y3" class="form-control form-control-sm" value="8" step="any"></div>
+                            <div class="col-3"><input type="number" id="w3" class="form-control form-control-sm bg-light-input fw-bold" value="200" step="any"></div>
+                        </div>
+
+                        <!-- Section Paramètres de l'algorithme -->
+                        <div class="card-header-custom mb-2">
+                            <i class="fa-solid fa-sliders"></i> Paramètres Algorithme
+                        </div>
+
+                        <!-- Paramètres avancés conformes au code Python -->
+                        <div class="advanced-settings mt-2 mb-3">
+                            <div class="row g-1 mb-2 align-items-center">
+                                <div class="col-7">
+                                    <small class="text-muted fw-bold">Epsilon (ε)</small>
+                                    <br><small class="text-muted" style="font-size:0.7rem;">Régularisation distance (10⁻ˣ)</small>
+                                </div>
+                                <div class="col-5">
+                                    <input type="number" id="epsilon_pow" class="form-control form-control-sm" value="6" min="1" max="12">
+                                </div>
+                            </div>
+                            <div class="row g-1 mb-2 align-items-center">
+                                <div class="col-7">
+                                    <small class="text-muted fw-bold">Tolérance</small>
+                                    <br><small class="text-muted" style="font-size:0.7rem;">Critère d'arrêt (10⁻ˣ)</small>
+                                </div>
+                                <div class="col-5">
+                                    <input type="number" id="tolerance_pow" class="form-control form-control-sm" value="6" min="1" max="12">
+                                </div>
+                            </div>
+                            <div class="row g-1 mb-2 align-items-center">
+                                <div class="col-7">
+                                    <small class="text-muted fw-bold">Amortissement (α)</small>
+                                    <br><small class="text-muted" style="font-size:0.7rem;">damping_factor</small>
+                                </div>
+                                <div class="col-5">
+                                    <input type="number" id="damping" class="form-control form-control-sm" value="0.5" step="0.1" min="0.1" max="1">
+                                </div>
+                            </div>
+                            <div class="row g-1 mb-2 align-items-center">
+                                <div class="col-7">
+                                    <small class="text-muted fw-bold">Régularisation (μ)</small>
+                                    <br><small class="text-muted" style="font-size:0.7rem;">Tikhonov (mu_reg)</small>
+                                </div>
+                                <div class="col-5">
+                                    <input type="number" id="mu_reg" class="form-control form-control-sm" value="0.001" step="0.001" min="0" max="1">
+                                </div>
+                            </div>
+                            <div class="row g-1 mb-2 align-items-center">
+                                <div class="col-7">
+                                    <small class="text-muted fw-bold">Pas maximal</small>
+                                    <br><small class="text-muted" style="font-size:0.7rem;">Trust Region (max_step)</small>
+                                </div>
+                                <div class="col-5">
+                                    <input type="number" id="max_step" class="form-control form-control-sm" value="20" step="1" min="1" max="100">
+                                </div>
+                            </div>
+                            <div class="row g-1 align-items-center">
+                                <div class="col-7">
+                                    <small class="text-muted fw-bold">Itérations max</small>
+                                </div>
+                                <div class="col-5">
+                                    <input type="number" id="max_iter" class="form-control form-control-sm" value="100" min="10" max="500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bouton de calcul -->
+                        <button class="btn btn-custom w-100 mt-2" onclick="lancerSimulation()">
+                            <i class="fa-solid fa-play me-2"></i> Lancer l'Optimisation
+                        </button>
+
+                        <!-- Message d'alerte -->
+                        <div id="alert-stop" class="alert-custom mt-3" style="display: none;">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                            <strong>Limite d'itérations atteinte</strong><br>
+                            <small>La solution est estimée. Vérifiez les paramètres.</small>
+                        </div>
                     </div>
-
-                    <div class="row g-2 mb-3 align-items-center">
-                        <div class="col-3 fw-bold text-secondary">Usine 1</div>
-                        <div class="col-3"><input type="number" id="x1" class="form-control form-control-sm" value="0"></div>
-                        <div class="col-3"><input type="number" id="y1" class="form-control form-control-sm" value="0"></div>
-                        <div class="col-3"><input type="number" id="w1" class="form-control form-control-sm bg-light" value="100"></div>
-                    </div>
-
-                    <div class="row g-2 mb-3 align-items-center">
-                        <div class="col-3 fw-bold text-secondary">Usine 2</div>
-                        <div class="col-3"><input type="number" id="x2" class="form-control form-control-sm" value="10"></div>
-                        <div class="col-3"><input type="number" id="y2" class="form-control form-control-sm" value="0"></div>
-                        <div class="col-3"><input type="number" id="w2" class="form-control form-control-sm bg-light" value="100"></div>
-                    </div>
-
-                    <div class="row g-2 mb-3 align-items-center">
-                        <div class="col-3 fw-bold text-secondary">Usine 3</div>
-                        <div class="col-3"><input type="number" id="x3" class="form-control form-control-sm" value="5"></div>
-                        <div class="col-3"><input type="number" id="y3" class="form-control form-control-sm" value="8"></div>
-                        <div class="col-3"><input type="number" id="w3" class="form-control form-control-sm bg-light" value="200"></div>
-                    </div>
-
-                    <hr class="text-muted">
-
-                    <div class="row g-2 mb-4 align-items-center">
-                        <div class="col-6 fw-bold text-secondary"><i class="fa-solid fa-crosshairs me-1"></i> Point de départ</div>
-                        <div class="col-3"><input type="number" id="x0" class="form-control form-control-sm" value="5"></div>
-                        <div class="col-3"><input type="number" id="y0" class="form-control form-control-sm" value="4"></div>
-                    </div>
-
-                    <button class="btn btn-custom w-100 mt-auto" onclick="lancerSimulation()">
-                        <i class="fa-solid fa-rotate me-2"></i> Recalculer le Réseau
-                    </button>
                 </div>
             </div>
 
-            <!-- GRAPHIQUE ET RÉSULTATS -->
-            <div class="col-lg-8">
+            <!-- Zone de résultats et graphique -->
+            <div class="col-lg-9">
+                
+                <!-- Indicateurs de performance -->
                 <div class="row g-3 mb-3" id="kpi-container">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="metric-box">
-                            <div class="metric-title"><i class="fa-solid fa-box text-primary"></i> Coordonnées optimales</div>
-                            <div class="metric-value" id="res-coords">X=0.00 | Y=0.00</div>
+                            <div class="metric-title">
+                                <i class="fa-solid fa-location-crosshairs" style="color: var(--accent-blue);"></i> 
+                                Coordonnées Optimales
+                            </div>
+                            <div class="metric-value" id="res-coords">
+                                X = 0.0000<br>Y = 0.0000
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="metric-box" style="border-left-color: #00c853;">
-                            <div class="metric-title"><i class="fa-solid fa-coins text-success"></i> Coût Logistique Total</div>
-                            <div class="metric-value text-success" id="res-cost">0.00</div>
+                    <div class="col-md-3">
+                        <div class="metric-box" style="border-left-color: var(--success);">
+                            <div class="metric-title">
+                                <i class="fa-solid fa-chart-line" style="color: var(--success);"></i> 
+                                Coût Total (T·km)
+                            </div>
+                            <div class="metric-value large text-success" id="res-cost">
+                                0.00
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="metric-box" style="border-left-color: #ff9100;">
-                            <div class="metric-title"><i class="fa-solid fa-truck-fast text-warning"></i> Temps de calcul</div>
-                            <div class="metric-value text-warning" id="res-iter">0 itérations</div>
+                    <div class="col-md-3">
+                        <div class="metric-box" style="border-left-color: var(--warning);">
+                            <div class="metric-title">
+                                <i class="fa-solid fa-rotate" style="color: var(--warning);"></i> 
+                                Itérations
+                            </div>
+                            <div class="metric-value large text-warning" id="res-iter">
+                                0 / 100
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box" style="border-left-color: var(--purple);">
+                            <div class="metric-title">
+                                <i class="fa-solid fa-ruler" style="color: var(--purple);"></i> 
+                                Distances (km)
+                            </div>
+                            <div class="mt-2">
+                                <span class="distance-badge" id="dist-1">Z1: 0.00</span>
+                                <span class="distance-badge" id="dist-2">Z2: 0.00</span>
+                                <span class="distance-badge" id="dist-3">Z3: 0.00</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Conteneur du Graphique -->
-                <div class="card p-1">
-                    <div id="plot"></div>
+                <!-- Graphique avec contrôles de zoom -->
+                <div class="card">
+                    <div class="card-body p-2">
+                        <div class="plot-container">
+                            <div id="plot"></div>
+                            <!-- Boutons de zoom -->
+                            <div class="zoom-controls">
+                                <button class="zoom-btn" onclick="zoomGraphique(1.5)" title="Zoom avant">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                                <button class="zoom-btn" onclick="zoomGraphique(0.75)" title="Zoom arrière">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                                <button class="zoom-btn reset-btn" onclick="resetZoom()" title="Réinitialiser le zoom">
+                                    <i class="fa-solid fa-arrows-to-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -165,205 +539,355 @@
 
     <script>
         let idAnimation = null;
+        
+        // Valeurs par défaut du zoom
+        const DEFAULT_X_RANGE = [-2, 13];
+        const DEFAULT_Y_RANGE = [-2, 11];
 
-        // Calcul Mathématique (Newton)
-        function dist(x, y, xi, yi) { return Math.sqrt(Math.pow(x - xi, 2) + Math.pow(y - yi, 2) + 1e-9); }
-
-        function calcF(x, y, X, Y, W) {
-            let f1 = 0, f2 = 0;
-            for(let i=0; i<3; i++) {
-                let d = dist(x, y, X[i], Y[i]);
-                f1 += W[i] * (x - X[i]) / d;
-                f2 += W[i] * (y - Y[i]) / d;
+        // Fonction de zoom
+        function zoomGraphique(factor) {
+            try {
+                let plotDiv = document.getElementById('plot');
+                let currentLayout = plotDiv.layout;
+                
+                if (!currentLayout || !currentLayout.xaxis || !currentLayout.yaxis) return;
+                
+                let xRange = currentLayout.xaxis.range || DEFAULT_X_RANGE;
+                let yRange = currentLayout.yaxis.range || DEFAULT_Y_RANGE;
+                
+                let xCenter = (xRange[0] + xRange[1]) / 2;
+                let yCenter = (yRange[0] + yRange[1]) / 2;
+                
+                let xHalfRange = (xRange[1] - xRange[0]) / (2 * factor);
+                let yHalfRange = (yRange[1] - yRange[0]) / (2 * factor);
+                
+                let newXRange = [xCenter - xHalfRange, xCenter + xHalfRange];
+                let newYRange = [yCenter - yHalfRange, yCenter + yHalfRange];
+                
+                Plotly.relayout('plot', {
+                    'xaxis.range': newXRange,
+                    'yaxis.range': newYRange
+                });
+            } catch (e) {
+                console.log("Zoom error:", e);
             }
-            return [f1, f2];
         }
 
-        function calcJ(x, y, X, Y, W) {
-            let df1_dx = 0, df1_dy = 0, df2_dy = 0;
-            for(let i=0; i<3; i++) {
-                let d = dist(x, y, X[i], Y[i]);
-                let d3 = Math.pow(d, 3);
-                df1_dx += W[i] * Math.pow(y - Y[i], 2) / d3;
-                df1_dy += W[i] * -(x - X[i]) * (y - Y[i]) / d3;
-                df2_dy += W[i] * Math.pow(x - X[i], 2) / d3;
+        // Fonction de réinitialisation du zoom
+        function resetZoom() {
+            try {
+                Plotly.relayout('plot', {
+                    'xaxis.range': DEFAULT_X_RANGE,
+                    'yaxis.range': DEFAULT_Y_RANGE
+                });
+            } catch (e) {
+                console.log("Reset zoom error:", e);
             }
-            return [[df1_dx, df1_dy], [df1_dy, df2_dy]];
         }
 
-        function algorithmeNewton(x0, y0, X, Y, W) {
-            let x = x0, y = y0, max_iter = 50, tol = 1e-6;
-            for(let i=0; i<max_iter; i++) {
-                let [f1, f2] = calcF(x, y, X, Y, W);
-                let [[j11, j12], [j21, j22]] = calcJ(x, y, X, Y, W);
-                let det = j11 * j22 - j12 * j21;
-                let dx = (j22 * -f1 - j12 * -f2) / det;
-                let dy = (-j21 * -f1 + j11 * -f2) / det;
-                let normF = Math.sqrt(f1*f1 + f2*f2);
-                let step = 1.0, next_x = x + dx, next_y = y + dy;
-                let cpt = 0;
-                while(cpt < 10) {
-                    let next_f = calcF(next_x, next_y, X, Y, W);
-                    if (Math.sqrt(next_f[0]*next_f[0] + next_f[1]*next_f[1]) < normF) break;
-                    step /= 2; next_x = x + dx * step; next_y = y + dy * step; cpt++;
+        // Algorithme de Newton-Raphson STRICTEMENT IDENTIQUE au code Python
+        function algorithmeNewtonPython(initial_guess, X, Y, W, epsilon, tolerance, max_iterations, damping_factor, mu_reg, max_step) {
+            let x = initial_guess[0];
+            let y = initial_guess[1];
+
+            for (let iteration = 0; iteration < max_iterations; iteration++) {
+                // === Calcul du Gradient ===
+                let grad_x = 0, grad_y = 0;
+
+                for (let i = 0; i < 3; i++) {
+                    let dx = x - X[i];
+                    let dy = y - Y[i];
+                    let dist = Math.sqrt(dx * dx + dy * dy + epsilon);
+
+                    grad_x += W[i] * dx / dist;
+                    grad_y += W[i] * dy / dist;
                 }
-                x = next_x; y = next_y;
-                if(Math.sqrt(Math.pow(dx*step,2) + Math.pow(dy*step,2)) < tol) return { x: x, y: y, iter: i + 1 };
+
+                let gradient = [grad_x, grad_y];
+
+                // === Calcul de la Hessienne ===
+                let h_xx = 0, h_xy = 0, h_yy = 0;
+
+                for (let i = 0; i < 3; i++) {
+                    let dx = x - X[i];
+                    let dy = y - Y[i];
+                    let dist = Math.sqrt(dx * dx + dy * dy + epsilon);
+                    let dist_cubed = Math.pow(dist, 3);
+
+                    h_xx += W[i] * Math.pow(dy, 2) / dist_cubed;
+                    h_xy += W[i] * (-dx * dy) / dist_cubed;
+                    h_yy += W[i] * Math.pow(dx, 2) / dist_cubed;
+                }
+
+                let hessian = [
+                    [h_xx, h_xy],
+                    [h_xy, h_yy]
+                ];
+
+                // === Régularisation de Tikhonov (mu_reg * I) ===
+                let hessian_reg = [
+                    [hessian[0][0] + mu_reg, hessian[0][1]],
+                    [hessian[1][0], hessian[1][1] + mu_reg]
+                ];
+
+                // === Résolution du système linéaire : H_reg * step = gradient ===
+                let det = hessian_reg[0][0] * hessian_reg[1][1] - hessian_reg[0][1] * hessian_reg[1][0];
+                
+                if (Math.abs(det) < 1e-15) {
+                    console.log("Erreur critique : Matrice singulière irrécupérable.");
+                    return { x: x, y: y, iter: iteration + 1, premature: true, error: true };
+                }
+
+                let step_x = (hessian_reg[1][1] * gradient[0] - hessian_reg[0][1] * gradient[1]) / det;
+                let step_y = (-hessian_reg[0][1] * gradient[0] + hessian_reg[0][0] * gradient[1]) / det;
+
+                // === Trust Region (écrêtage du pas) ===
+                step_x = Math.max(-max_step, Math.min(max_step, step_x));
+                step_y = Math.max(-max_step, Math.min(max_step, step_y));
+
+                // === Mise à jour de la position avec amortissement ===
+                let deplacement_x = damping_factor * step_x;
+                let deplacement_y = damping_factor * step_y;
+
+                x -= deplacement_x;
+                y -= deplacement_y;
+
+                // === Critère d'arrêt basé sur la norme du déplacement ===
+                let norm_deplacement = Math.sqrt(deplacement_x * deplacement_x + deplacement_y * deplacement_y);
+                
+                if (norm_deplacement < tolerance) {
+                    console.log(`Convergence algorithmique atteinte à l'itération ${iteration + 1}.`);
+                    return { x: x, y: y, iter: iteration + 1, premature: false, error: false };
+                }
             }
-            return { x: x, y: y, iter: max_iter };
+
+            console.log(`Avertissement : Limite atteinte (${max_iterations} itérations). Solution estimée.`);
+            return { x: x, y: y, iter: max_iterations, premature: true, error: false };
         }
 
-        // Lancement
         function lancerSimulation() {
-            let X = [parseFloat(document.getElementById('x1').value), parseFloat(document.getElementById('x2').value), parseFloat(document.getElementById('x3').value)];
-            let Y = [parseFloat(document.getElementById('y1').value), parseFloat(document.getElementById('y2').value), parseFloat(document.getElementById('y3').value)];
-            let W = [parseFloat(document.getElementById('w1').value), parseFloat(document.getElementById('w2').value), parseFloat(document.getElementById('w3').value)];
-            let startX = parseFloat(document.getElementById('x0').value);
-            let startY = parseFloat(document.getElementById('y0').value);
+            // Lecture des données du réseau logistique
+            let X = [
+                parseFloat(document.getElementById('x1').value),
+                parseFloat(document.getElementById('x2').value),
+                parseFloat(document.getElementById('x3').value)
+            ];
+            let Y = [
+                parseFloat(document.getElementById('y1').value),
+                parseFloat(document.getElementById('y2').value),
+                parseFloat(document.getElementById('y3').value)
+            ];
+            let W = [
+                parseFloat(document.getElementById('w1').value),
+                parseFloat(document.getElementById('w2').value),
+                parseFloat(document.getElementById('w3').value)
+            ];
 
-            let res = algorithmeNewton(startX, startY, X, Y, W);
+            // Point de départ fixe (conforme au code Python : [5.0, 4.0])
+            let initial_guess = [5.0, 4.0];
 
+            // Paramètres de l'algorithme (conformes au code Python)
+            let epsilon = Math.pow(10, -parseFloat(document.getElementById('epsilon_pow').value));
+            let tolerance = Math.pow(10, -parseFloat(document.getElementById('tolerance_pow').value));
+            let max_iterations = parseInt(document.getElementById('max_iter').value);
+            let damping_factor = parseFloat(document.getElementById('damping').value);
+            let mu_reg = parseFloat(document.getElementById('mu_reg').value);
+            let max_step = parseFloat(document.getElementById('max_step').value);
+
+            // Lancer l'optimisation
+            let res = algorithmeNewtonPython(
+                initial_guess, X, Y, W, 
+                epsilon, tolerance, max_iterations, 
+                damping_factor, mu_reg, max_step
+            );
+
+            // Calcul du coût total et des distances
             let coutTotal = 0;
-            for(let i=0; i<3; i++) coutTotal += dist(res.x, res.y, X[i], Y[i]) * W[i];
+            let distances = [];
+            for (let i = 0; i < 3; i++) {
+                let d = Math.sqrt(Math.pow(res.x - X[i], 2) + Math.pow(res.y - Y[i], 2));
+                distances.push(d);
+                coutTotal += d * W[i];
+            }
 
-            document.getElementById('res-coords').innerHTML = `X = ${res.x.toFixed(2)} | Y = ${res.y.toFixed(2)}`;
-            document.getElementById('res-cost').innerHTML = `${coutTotal.toFixed(0)} <small>t.km</small>`;
-            document.getElementById('res-iter').innerHTML = `${res.iter} itérations`;
+            // Mise à jour de l'interface
+            document.getElementById('res-coords').innerHTML = 
+                `<span style="font-size:0.85rem;">X =</span> ${res.x.toFixed(4)}<br><span style="font-size:0.85rem;">Y =</span> ${res.y.toFixed(4)}`;
+            document.getElementById('res-cost').innerHTML = `${coutTotal.toFixed(2)}`;
+            document.getElementById('res-iter').innerHTML = `${res.iter} / ${max_iterations}`;
+            document.getElementById('dist-1').innerText = `Z1: ${distances[0].toFixed(2)} km`;
+            document.getElementById('dist-2').innerText = `Z2: ${distances[1].toFixed(2)} km`;
+            document.getElementById('dist-3').innerText = `Z3: ${distances[2].toFixed(2)} km`;
 
+            // Gérer l'affichage de l'alerte
+            let alertDiv = document.getElementById('alert-stop');
+            if (res.premature) {
+                alertDiv.style.display = 'block';
+                if (res.error) {
+                    alertDiv.innerHTML = '<i class="fa-solid fa-circle-exclamation me-2"></i><strong>Erreur : Matrice singulière irrécupérable</strong><br><small>Les points sont peut-être confondus.</small>';
+                } else {
+                    alertDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i><strong>Limite d\'itérations atteinte</strong><br><small>La solution est estimée. Vérifiez les paramètres.</small>';
+                }
+            } else {
+                alertDiv.style.display = 'none';
+            }
+
+            // Mise à jour du graphique
             dessinerGraphique(X, Y, W, res.x, res.y);
         }
 
-        // Dessin Graphique Style "Blueprint"
+        // Dessin du graphique avec Plotly
         function dessinerGraphique(X, Y, W, optX, optY) {
             if (idAnimation) cancelAnimationFrame(idAnimation);
 
             let traces = [];
 
-            // 0. Le Triangle Bleu (Zone d'action)
+            // Triangle reliant les 3 zones
             traces.push({
-                x: [X[0], X[1], X[2], X[0]], y: [Y[0], Y[1], Y[2], Y[0]],
+                x: [X[0], X[1], X[2], X[0]],
+                y: [Y[0], Y[1], Y[2], Y[0]],
                 fill: 'toself',
-                fillcolor: 'rgba(176, 212, 227, 0.4)', // Bleu très clair transparent
-                line: { color: '#0A2558', width: 2 },
+                fillcolor: 'rgba(61, 146, 201, 0.15)',
+                line: { color: '#0D3B66', width: 2.5, dash: 'dash' },
                 hoverinfo: 'none',
-                name: 'Territoire'
-            });
-
-            // 1. Usines (Cercle blanc avec bord bleu)
-            traces.push({
-                x: X, y: Y,
-                mode: 'markers+text',
-                type: 'scatter',
-                text: ['🏭', '🏭', '🏭'], // Icône Usine
-                textfont: { size: 25 },
-                marker: { size: 45, color: '#ffffff', line: {color: '#0A2558', width: 3} },
-                hoverinfo: 'text',
-                hovertext: W.map((w, i) => `Zone ${i+1} : ${w} t`),
                 showlegend: false
             });
 
-            // 2. Nouvel Entrepôt (Hexagone/Carré stylisé)
+            // Usines (Z1, Z2, Z3)
             traces.push({
-                x: [optX], y: [optY],
+                x: X,
+                y: Y,
                 mode: 'markers+text',
-                type: 'scatter',
-                text: ['📦'], // Icône Colis
-                textfont: { size: 22 },
-                marker: { symbol: 'hexagon', size: 50, color: '#E8F1F8', line: {color: '#ff8f00', width: 4} },
+                text: ['🏭 Z1', '🏭 Z2', '🏭 Z3'],
+                textposition: 'bottom center',
+                textfont: { size: 13, color: '#0D3B66', family: 'Segoe UI' },
+                marker: {
+                    size: 35,
+                    color: '#FFFFFF',
+                    line: { color: '#0D3B66', width: 3.5 }
+                },
                 hoverinfo: 'text',
-                hovertext: `Nouveau CD\nX: ${optX.toFixed(2)}\nY: ${optY.toFixed(2)}`,
+                hovertext: [
+                    `Zone 1<br>X: ${X[0]}, Y: ${Y[0]}<br>Volume: ${W[0]} t`,
+                    `Zone 2<br>X: ${X[1]}, Y: ${Y[1]}<br>Volume: ${W[1]} t`,
+                    `Zone 3<br>X: ${X[2]}, Y: ${Y[2]}<br>Volume: ${W[2]} t`
+                ],
                 showlegend: false
             });
 
-            // 3. Les Camions de livraison 🚚
+            // Entrepôt optimal
             traces.push({
-                x: [optX, optX, optX], y: [optY, optY, optY],
+                x: [optX],
+                y: [optY],
+                mode: 'markers+text',
+                text: ['📦 CD'],
+                textposition: 'top center',
+                textfont: { size: 14, color: '#FF6D00', family: 'Segoe UI', weight: 'bold' },
+                marker: {
+                    symbol: 'hexagon',
+                    size: 40,
+                    color: '#FFF3E0',
+                    line: { color: '#FF6D00', width: 4 }
+                },
+                hoverinfo: 'text',
+                hovertext: `Centre de Distribution<br>X: ${optX.toFixed(4)}<br>Y: ${optY.toFixed(4)}`,
+                showlegend: false
+            });
+
+            // Camions animés (initialement au CD)
+            traces.push({
+                x: [optX, optX, optX],
+                y: [optY, optY, optY],
                 mode: 'text',
                 text: ['🚚', '🚚', '🚚'],
-                textfont: { size: 24 },
+                textfont: { size: 20 },
                 hoverinfo: 'none',
                 showlegend: false
             });
 
-            // Construction du design du repère (Axes X et Y)
-            let customAnnotations = [];
-
-            // Flèches des axes X et Y
-            customAnnotations.push({ x: 12, y: 0, ax: 11.5, ay: 0, xref: 'x', yref: 'y', axref: 'x', ayref: 'y', showarrow: true, arrowhead: 3, arrowsize: 1.5, arrowwidth: 3, arrowcolor: 'black' });
-            customAnnotations.push({ x: 12.3, y: 0, text: '<b>X</b>', showarrow: false, font: {size: 18} });
-
-            customAnnotations.push({ x: 0, y: 10, ax: 0, ay: 9.5, xref: 'x', yref: 'y', axref: 'x', ayref: 'y', showarrow: true, arrowhead: 3, arrowsize: 1.5, arrowwidth: 3, arrowcolor: 'black' });
-            customAnnotations.push({ x: 0, y: 10.3, text: '<b>Y</b>', showarrow: false, font: {size: 18} });
-
-            // Textes des Zones et lignes en pointillés avec vecteurs (d1, d2, d3)
-            for(let i=0; i<3; i++) {
-                // Ligne pointillée avec flèche vers l'usine
-                customAnnotations.push({
-                    x: X[i], y: Y[i], ax: optX, ay: optY,
-                    xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
-                    showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 2, arrowcolor: '#0A2558', arrowdash: 'dash'
-                });
-
-                // Texte d1, d2, d3 au milieu de la ligne
-                customAnnotations.push({
-                    x: (optX + X[i])/2, y: (optY + Y[i])/2,
-                    text: `<b>d${i+1}</b>`, showarrow: false, font: {size: 14, color: '#000'},
-                    bgcolor: 'rgba(255,255,255,0.8)', borderpad: 2
-                });
-
-                // Labels "Zone 1 (0,0)" à côté des usines
-                let pos = i===2 ? 'bottom center' : (i===0 ? 'bottom right' : 'bottom left');
-                customAnnotations.push({
-                    x: X[i], y: Y[i] + (i===2 ? 0.8 : -0.8), // Ajustement pour ne pas couvrir l'icône
-                    text: `<b>Zone ${i+1} (${X[i]},${Y[i]})</b>`, showarrow: false, font: {size: 13}
+            // Flèches de livraison
+            let annotations = [];
+            for (let i = 0; i < 3; i++) {
+                annotations.push({
+                    x: X[i],
+                    y: Y[i],
+                    ax: optX,
+                    ay: optY,
+                    xref: 'x',
+                    yref: 'y',
+                    axref: 'x',
+                    ayref: 'y',
+                    showarrow: true,
+                    arrowhead: 3,
+                    arrowsize: 1.5,
+                    arrowwidth: 2,
+                    arrowcolor: '#3D92C9',
+                    opacity: 0.7
                 });
             }
 
-            // Label "Nouveau CD (x,y)"
-            customAnnotations.push({
-                x: optX, y: optY - 0.8,
-                text: `<b>Nouveau CD<br>(${optX.toFixed(1)}, ${optY.toFixed(1)})</b>`, showarrow: false, font: {size: 13, color: '#ff8f00'}
-            });
-
-            var layout = {
-                xaxis: { range: [-1, 13], dtick: 1, gridcolor: '#d0e3ec', zeroline: true, zerolinecolor: 'black', zerolinewidth: 3, tickfont: {bold: true} },
-                yaxis: { range: [-1, 11], dtick: 1, gridcolor: '#d0e3ec', zeroline: true, zerolinecolor: 'black', zerolinewidth: 3, tickfont: {bold: true} },
-                plot_bgcolor: '#f4f9fd', // Fond bleu très léger
+            let layout = {
+                xaxis: {
+                    range: DEFAULT_X_RANGE,
+                    dtick: 1,
+                    gridcolor: '#e0e6ed',
+                    zeroline: true,
+                    zerolinecolor: '#0D3B66',
+                    zerolinewidth: 2.5,
+                    title: { text: 'Coordonnée X (km)', font: { size: 13, color: '#4A4A4A' } }
+                },
+                yaxis: {
+                    range: DEFAULT_Y_RANGE,
+                    dtick: 1,
+                    gridcolor: '#e0e6ed',
+                    zeroline: true,
+                    zerolinecolor: '#0D3B66',
+                    zerolinewidth: 2.5,
+                    title: { text: 'Coordonnée Y (km)', font: { size: 13, color: '#4A4A4A' } }
+                },
+                plot_bgcolor: '#fafbfc',
                 paper_bgcolor: 'transparent',
-                margin: { t: 20, b: 20, l: 30, r: 20 },
-                annotations: customAnnotations,
-                dragmode: false // Empêche de zoomer par erreur pour garder le design intact
+                margin: { t: 20, b: 50, l: 50, r: 20 },
+                annotations: annotations,
+                dragmode: 'pan',
+                font: { family: 'Segoe UI' }
             };
 
-            Plotly.newPlot('plot', traces, layout, {displayModeBar: false});
+            let config = {
+                displayModeBar: false,
+                responsive: true,
+                scrollZoom: true,
+                displaylogo: false
+            };
 
-            // --- ANIMATION DES CAMIONS ---
+            Plotly.newPlot('plot', traces, layout, config);
+
+            // Animation des camions
             let progress = [0, 0, 0];
-            // Vitesses différentes pour les 3 camions
-            let vitesses = [0.003, 0.005, 0.002];
+            let vitesses = [0.004, 0.006, 0.003];
 
             function animerFlux() {
-                let updateX = [], updateY = [];
+                let uX = [], uY = [];
                 for (let i = 0; i < 3; i++) {
                     progress[i] += vitesses[i];
-                    if (progress[i] > 1) progress[i] = 0; // Reviens au CD
-
-                    updateX.push(optX + progress[i] * (X[i] - optX));
-                    updateY.push(optY + progress[i] * (Y[i] - optY));
+                    if (progress[i] > 1) progress[i] = 0;
+                    uX.push(optX + progress[i] * (X[i] - optX));
+                    uY.push(optY + progress[i] * (Y[i] - optY));
                 }
-
                 try {
-                    // Met à jour uniquement la trace 3 (Les camions)
-                    Plotly.restyle('plot', {'x': [updateX], 'y': [updateY]}, [3]);
+                    Plotly.restyle('plot', { 'x': [uX], 'y': [uY] }, [3]);
                     idAnimation = requestAnimationFrame(animerFlux);
                 } catch (e) {
                     cancelAnimationFrame(idAnimation);
                 }
             }
-            setTimeout(animerFlux, 300); // Lance les camions !
+            setTimeout(animerFlux, 400);
         }
 
-        window.onload = lancerSimulation;
+        // Lancement automatique au chargement
+        window.onload = function() {
+            setTimeout(lancerSimulation, 300);
+        };
     </script>
 </body>
 </html>
